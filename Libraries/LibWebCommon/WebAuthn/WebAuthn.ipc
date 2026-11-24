@@ -1,0 +1,71 @@
+// Copyright (c) 2026-present, the Ladybird developers.
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
+#include <LibWebCommon/WebAuthn/WebAuthn.h>
+
+[ExistingCpp]
+enum Web::WebAuthn::Error : u8 {
+    NotAllowed,
+    NotSupported,
+    InvalidState,
+    Security,
+    Type,
+}
+
+[ExistingCpp]
+enum Web::WebAuthn::UserVerificationRequirement : u8 {
+    Required,
+    Preferred,
+    Discouraged,
+}
+
+[ExistingCpp]
+enum Web::WebAuthn::ResidentKeyRequirement : u8 {
+    Discouraged,
+    Preferred,
+    Required,
+}
+
+[ExistingCpp]
+struct Web::WebAuthn::CreationOptions {
+    String rp_name;
+    ByteBuffer user_id;
+    String user_name;
+    String user_display_name;
+    Vector<i32> algorithms;
+    Web::WebAuthn::ResidentKeyRequirement resident_key;
+}
+
+[ExistingCpp]
+struct Web::WebAuthn::Request {
+    ByteBuffer challenge;
+    Optional<String> rp_id;
+    Vector<ByteBuffer> credentials;
+    bool allows_only_unsupported_credentials;
+    Web::WebAuthn::UserVerificationRequirement user_verification;
+    Optional<u32> timeout;
+    Optional<Web::WebAuthn::CreationOptions> creation;
+}
+
+[ExistingCpp]
+struct Web::WebAuthn::AuthenticatorRequest {
+    String origin;
+    String rp_id;
+    ByteBuffer client_data_json;
+    Vector<ByteBuffer> credentials;
+    Web::WebAuthn::UserVerificationRequirement user_verification;
+    u32 timeout;
+    Optional<Web::WebAuthn::CreationOptions> creation;
+}
+
+[ExistingCpp]
+struct Web::WebAuthn::Response {
+    ByteBuffer client_data_json;
+    ByteBuffer raw_id;
+    ByteBuffer authenticator_data;
+    ByteBuffer attestation_object;
+    ByteBuffer public_key;
+    ByteBuffer signature;
+    Optional<ByteBuffer> user_handle;
+}

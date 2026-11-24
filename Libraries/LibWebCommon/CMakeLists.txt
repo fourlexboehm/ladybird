@@ -129,6 +129,7 @@ compile_ipc(UIEvents/MouseButton.ipc UIEvents/MouseButtonCodecs.h)
 compile_ipc(UpgradeInsecureRequests/InsecureRequestsPolicy.ipc UpgradeInsecureRequests/InsecureRequestsPolicyCodecs.h)
 compile_ipc(WebView/AccessibilityNodeData.ipc WebView/AccessibilityNodeDataCodecs.h)
 compile_ipc(WebView/DictionaryLookup.ipc WebView/DictionaryLookupCodecs.h)
+compile_ipc(WebAuthn/WebAuthn.ipc WebAuthn/WebAuthnCodecs.h)
 compile_ipc(WebDriver/BiDi.ipc WebDriver/BiDiCodecs.h)
 
 # NB: The protocols between the UI process and the processes it hosts web content in only use LibWebCommon types, so
