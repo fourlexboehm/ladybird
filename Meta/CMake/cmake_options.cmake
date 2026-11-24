@@ -39,6 +39,7 @@ option(ENABLE_INSTALL_FREEDESKTOP_FILES "Enable installing .desktop and .service
 option(LADYBIRD_ENABLE_CPPTRACE "Enable use of cpptrace as the default library for stacktraces. If not available falls back to backtrace.h" ON)
 option(LADYBIRD_ENABLE_UPDATE_CHECK "Check for newer releases of Ladybird" ON)
 option(LADYBIRD_ENABLE_SPARKLE "Update the macOS app with Sparkle" ON)
+option(LADYBIRD_ENABLE_WEBAUTHN "Use USB security keys for Web Authentication" ON)
 if (NOT LADYBIRD_ENABLE_UPDATE_CHECK)
     # Sparkle only installs the releases that the update check finds.
     set(LADYBIRD_ENABLE_SPARKLE OFF)

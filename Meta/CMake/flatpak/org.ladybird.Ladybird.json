@@ -546,6 +546,43 @@
       ]
     },
     {
+      "name": "libcbor",
+      "buildsystem": "cmake-ninja",
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://github.com/PJK/libcbor.git",
+          "tag": "v0.14.0"
+        }
+      ],
+      "config-opts": [
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_PREFIX_PATH=/app",
+        "-DBUILD_SHARED_LIBS=ON",
+        "-DWITH_EXAMPLES=OFF",
+        "-DWITH_TESTS=OFF"
+      ]
+    },
+    {
+      "name": "libfido2",
+      "buildsystem": "cmake-ninja",
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://github.com/Yubico/libfido2.git",
+          "tag": "1.17.0"
+        }
+      ],
+      "config-opts": [
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_PREFIX_PATH=/app",
+        "-DBUILD_EXAMPLES=OFF",
+        "-DBUILD_MANPAGES=OFF",
+        "-DBUILD_TESTS=OFF",
+        "-DBUILD_TOOLS=OFF"
+      ]
+    },
+    {
       "name": "ffmpeg",
       "buildsystem": "simple",
       "build-commands": [

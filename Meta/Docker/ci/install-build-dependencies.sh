@@ -58,7 +58,6 @@ case "${ID}" in
                 libatspi2.0-dev
                 libegl-dev
                 libglu1-mesa-dev
-                libudev-dev
                 libvulkan-dev
                 libx11-xcb-dev
                 libxcb-cursor-dev
@@ -116,6 +115,7 @@ case "${ID}" in
             libpulse-dev \
             libstdc++-"${GCC_VERSION}"-dev \
             libtool \
+            libudev-dev \
             libwayland-dev \
             libxcb-icccm4-dev \
             lld-"${LLVM_VERSION}" \
@@ -176,6 +176,7 @@ case "${ID}" in
             qt6-qttools-devel \
             qt6-qtwayland-devel \
             rpm-build \
+            systemd-devel \
             tar \
             unzip \
             which \

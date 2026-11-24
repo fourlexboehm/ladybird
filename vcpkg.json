@@ -318,6 +318,19 @@
           "platform": "osx"
         }
       ]
+    },
+    "webauthn": {
+      "description": "Use USB security keys for Web Authentication",
+      "dependencies": [
+        {
+          "name": "libcbor",
+          "platform": "osx | (linux & !android)"
+        },
+        {
+          "name": "libfido2",
+          "platform": "osx | (linux & !android)"
+        }
+      ]
     }
   },
   "overrides": [
@@ -380,12 +393,20 @@
       "version": "1.4.2#1"
     },
     {
+      "name": "libcbor",
+      "version": "0.14.0#0"
+    },
+    {
       "name": "libdwarf",
       "version": "2.3.3#0"
     },
     {
       "name": "libedit",
       "version": "2024-08-08#1"
+    },
+    {
+      "name": "libfido2",
+      "version": "1.17.0#0"
     },
     {
       "name": "libjpeg-turbo",

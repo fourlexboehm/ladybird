@@ -29,6 +29,7 @@ from Utils.host_platform import Platform  # noqa: E402
 MANIFEST_FEATURE_OPTIONS = {
     "qt": {"LADYBIRD_BUILD_QT": False, "ENABLE_GUI_TARGETS": True},
     "sparkle": {"LADYBIRD_ENABLE_UPDATE_CHECK": True, "LADYBIRD_ENABLE_SPARKLE": True},
+    "webauthn": {"LADYBIRD_ENABLE_WEBAUTHN": True},
 }
 
 # The lists in Meta/CMake of the ports that distribution builds link dynamically. Keep in sync with
