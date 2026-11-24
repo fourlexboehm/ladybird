@@ -20,6 +20,7 @@
 #include <LibWeb/CSS/StyleComputer.h>
 #include <LibWeb/CSS/StyleEngineInput.h>
 #include <LibWeb/Compositor/CompositorHost.h>
+#include <LibWeb/DOM/AbortSignal.h>
 #include <LibWeb/DOM/Document.h>
 #include <LibWeb/DOM/Element.h>
 #include <LibWeb/DOM/Range.h>
@@ -182,6 +183,10 @@ void Page::visit_edges(JS::Cell::Visitor& visitor)
     for (auto const& request : m_pending_geolocation_requests)
         visitor.visit(request.value.callback);
     visitor.visit(m_pending_permission_requests);
+    for (auto const& request : m_pending_webauthn_requests) {
+        visitor.visit(request.value.callback);
+        visitor.visit(request.value.signal);
+    }
     visitor.visit(m_notifications_list);
     visitor.visit(m_unloading_canceled_checks);
     m_pending_fullscreen_operations.for_each([&](auto const& operation) {
@@ -1788,6 +1793,32 @@ void Page::permission_request_completed(u64 request_id, Web::Permissions::Effect
 {
     if (auto callback = m_pending_permission_requests.take(request_id); callback.has_value())
         callback.value()->function()(state);
+}
+
+void Page::request_webauthn(HTML::CrossProcessId requesting_document_id, WebAuthn::Request request, WebAuthnCallback callback, DOM::AbortSignal* signal)
+{
+    auto request_id = m_next_webauthn_request_id++;
+    Optional<u64> abort_algorithm_id;
+    if (signal) {
+        // NB: The ceremony then rejects with the signal's abort reason, and the UI process cancels its authenticator
+        //     operations.
+        abort_algorithm_id = signal->add_abort_algorithm(GC::create_function(heap(), GC::captures(GC::Ref { *this }, request_id), [](auto& page, auto& request_id) {
+            page->client().page_did_cancel_webauthn(request_id);
+            page->webauthn_request_completed(request_id, WebAuthn::Error::NotAllowed);
+        }));
+    }
+    m_pending_webauthn_requests.set(request_id, { callback, signal, abort_algorithm_id });
+    client().page_did_request_webauthn(request_id, requesting_document_id, request);
+}
+
+void Page::webauthn_request_completed(u64 request_id, WebAuthn::Result result)
+{
+    auto request = m_pending_webauthn_requests.take(request_id);
+    if (!request.has_value())
+        return;
+    if (request->signal && request->abort_algorithm_id.has_value())
+        request->signal->remove_abort_algorithm(*request->abort_algorithm_id);
+    request->callback->function()(move(result));
 }
 
 void Page::add_unloading_canceled_check(Badge<HTML::CheckUnloadingCanceledState>, GC::Ref<HTML::CheckUnloadingCanceledState> check)

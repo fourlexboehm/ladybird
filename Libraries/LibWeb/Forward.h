@@ -239,7 +239,11 @@ class CookieStore;
 
 namespace Web::CredentialManagement {
 
+class AuthenticatorAssertionResponse;
+class AuthenticatorAttestationResponse;
+class AuthenticatorResponse;
 class CredentialsContainer;
+class PublicKeyCredential;
 
 }
 

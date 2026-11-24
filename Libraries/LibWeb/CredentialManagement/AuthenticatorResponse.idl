@@ -1,0 +1,4 @@
+[SecureContext, Exposed=Window, ImplementedIn=Rust]
+interface AuthenticatorResponse {
+    [SameObject] readonly attribute ArrayBuffer clientDataJSON;
+};

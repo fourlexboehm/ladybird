@@ -14,26 +14,29 @@ use libjs_rust::api::{ErrorKind, ErrorType, Trace, Vm};
 use super::credential::{AnyCredential, CredentialMediationRequirement};
 use super::federated_credential::{FederatedCredentialInit, FederatedCredentialRequestOptions};
 use super::password_credential::PasswordCredentialInit;
+use super::public_key_credential::{PublicKeyCredentialCreationOptions, PublicKeyCredentialRequestOptions};
 use crate::bindings::interface::{Ref, Wrappable, allocate, cell_into_abi};
 use crate::bindings::promise::{WebIdlPromise, reject_promise_with_exception};
 use crate::bindings::{CallContext, Exception, WebIdlResult};
 use crate::dom::abort_signal::AbortSignal;
 
 /// https://w3c.github.io/webappsec-credential-management/#dictdef-credentialrequestoptions
-#[expect(dead_code, reason = "get() does not read the options yet")]
-pub(crate) struct CredentialRequestOptions {
+#[expect(dead_code, reason = "password and federated credential requests are not implemented")]
+pub(crate) struct CredentialRequestOptions<'vm> {
     pub(crate) federated: Option<FederatedCredentialRequestOptions>,
     pub(crate) mediation: CredentialMediationRequirement,
     pub(crate) password: bool,
+    pub(crate) public_key: Option<PublicKeyCredentialRequestOptions<'vm>>,
     pub(crate) signal: Option<Ref<AbortSignal>>,
 }
 
 /// https://w3c.github.io/webappsec-credential-management/#dictdef-credentialcreationoptions
-#[expect(dead_code, reason = "create() does not read the options yet")]
-pub(crate) struct CredentialCreationOptions {
+#[expect(dead_code, reason = "password and federated credential creation is not implemented")]
+pub(crate) struct CredentialCreationOptions<'vm> {
     pub(crate) federated: Option<FederatedCredentialInit>,
     pub(crate) mediation: CredentialMediationRequirement,
     pub(crate) password: Option<PasswordCredentialInit>,
+    pub(crate) public_key: Option<PublicKeyCredentialCreationOptions<'vm>>,
     pub(crate) signal: Option<Ref<AbortSignal>>,
 }
 
@@ -56,8 +59,11 @@ impl CredentialsContainer {
         &self,
         cx: &mut CallContext,
         promise: WebIdlPromise,
-        _: CredentialRequestOptions,
+        options: CredentialRequestOptions<'_>,
     ) -> WebIdlResult<()> {
+        if let Some(public_key) = options.public_key {
+            return super::webauthn::get(cx, promise, public_key, options.signal, options.mediation);
+        }
         eprintln!("FIXME: Unimplemented CredentialsContainer::get()");
         reject_not_implemented_promise(cx.vm(), promise, "get");
         Ok(())
@@ -75,8 +81,11 @@ impl CredentialsContainer {
         &self,
         cx: &mut CallContext,
         promise: WebIdlPromise,
-        _: CredentialCreationOptions,
+        options: CredentialCreationOptions<'_>,
     ) -> WebIdlResult<()> {
+        if let Some(public_key) = options.public_key {
+            return super::webauthn::create(cx, promise, public_key, options.signal, options.mediation);
+        }
         eprintln!("FIXME: Unimplemented CredentialsContainer::create()");
         reject_not_implemented_promise(cx.vm(), promise, "create");
         Ok(())

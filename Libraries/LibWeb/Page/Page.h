@@ -108,6 +108,7 @@
 #include <LibWebCommon/PixelUnits.h>
 #include <LibWebCommon/StorageAPI/StorageEndpoint.h>
 #include <LibWebCommon/UIEvents/KeyCode.h>
+#include <LibWebCommon/WebAuthn/WebAuthn.h>
 #include <LibWebCommon/WebView/StorageSetResult.h>
 
 namespace Web {
@@ -411,6 +412,10 @@ public:
     void request_permission(HTML::CrossProcessId requesting_document_id, Utf16String const& name, PermissionPromptCallback);
     void permission_request_completed(u64 request_id, Web::Permissions::EffectiveState);
 
+    using WebAuthnCallback = GC::Ref<GC::Function<void(WebAuthn::Result)>>;
+    void request_webauthn(HTML::CrossProcessId requesting_document_id, WebAuthn::Request, WebAuthnCallback, DOM::AbortSignal*);
+    void webauthn_request_completed(u64 request_id, WebAuthn::Result);
+
     // The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) this page has asked
     // the UI process to show, by the id that names each one across the bridge.
     u64 allocate_notification_id() { return m_next_notification_id++; }
@@ -685,6 +690,14 @@ private:
 
     HashMap<u64, PermissionPromptCallback> m_pending_permission_requests;
     u64 m_next_permission_request_id { 0 };
+
+    struct PendingWebAuthnRequest {
+        WebAuthnCallback callback;
+        GC::Ptr<DOM::AbortSignal> signal;
+        Optional<u64> abort_algorithm_id;
+    };
+    HashMap<u64, PendingWebAuthnRequest> m_pending_webauthn_requests;
+    u64 m_next_webauthn_request_id { 0 };
 
     HashMap<u64, GC::Ref<NotificationsAPI::Notification>> m_notifications_list;
     u64 m_next_notification_id { 0 };
@@ -1000,6 +1013,8 @@ public:
     virtual void page_did_start_geolocation_position_watch([[maybe_unused]] u64 request_id, [[maybe_unused]] HTML::CrossProcessId requesting_document_id) { }
     virtual void page_did_stop_geolocation_position_watch([[maybe_unused]] u64 request_id) { }
     virtual void page_did_request_permission([[maybe_unused]] u64 request_id, [[maybe_unused]] HTML::CrossProcessId requesting_document_id, [[maybe_unused]] Utf16String const& name) { }
+    virtual void page_did_request_webauthn([[maybe_unused]] u64 request_id, [[maybe_unused]] HTML::CrossProcessId requesting_document_id, [[maybe_unused]] WebAuthn::Request const& request) { }
+    virtual void page_did_cancel_webauthn([[maybe_unused]] u64 request_id) { }
     virtual Optional<Web::Permissions::PermissionSnapshot> page_did_request_permission_snapshot([[maybe_unused]] URL::Origin const& top_level_origin) { return {}; }
     virtual Optional<Web::Permissions::PermissionSnapshot> page_did_set_permission_for_testing([[maybe_unused]] HTML::CrossProcessId document_id, [[maybe_unused]] String const& name, [[maybe_unused]] String const& state) { return {}; }
     virtual void page_did_set_next_permission_prompt_outcome_for_testing([[maybe_unused]] String const& name, [[maybe_unused]] String const& outcome, [[maybe_unused]] bool held) { }

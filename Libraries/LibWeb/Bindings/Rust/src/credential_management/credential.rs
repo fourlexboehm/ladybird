@@ -12,6 +12,7 @@ use libjs_rust::api::{Trace, Value};
 
 use super::federated_credential::FederatedCredential;
 use super::password_credential::PasswordCredential;
+use super::public_key_credential::PublicKeyCredential;
 use crate::bindings::conversions::UsvString;
 use crate::bindings::interface::{Ref, Wrappable};
 use crate::bindings::promise::{WebIdlPromise, create_resolved_promise};
@@ -71,4 +72,5 @@ pub(crate) enum AnyCredential {
     Credential(Ref<Credential>),
     FederatedCredential(Ref<FederatedCredential>),
     PasswordCredential(Ref<PasswordCredential>),
+    PublicKeyCredential(Ref<PublicKeyCredential>),
 }
