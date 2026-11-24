@@ -61,6 +61,7 @@
 #include <LibWebCommon/Page/ScreenWakeLockState.h>
 #include <LibWebCommon/Page/ViewportIsFullscreen.h>
 #include <LibWebCommon/Permissions/Permissions.h>
+#include <LibWebCommon/WebAuthn/WebAuthn.h>
 #include <LibWebCommon/WebDriver/Response.h>
 #include <LibWebCommon/WebDriver/SessionBrowsingContext.h>
 #include <LibWebCommon/WebView/DOMNodeProperties.h>
@@ -163,6 +164,9 @@ public:
     void set_site_permission(URL::Origin const&, Web::Permissions::PermissionName, Optional<PermissionDecision>);
     void reset_site_permissions(URL::Origin const&);
     void did_request_permission(Badge<WebContentPage>, Web::Permissions::PermissionName);
+
+    void request_webauthn(Badge<WebContentPage>, WebContentPage&, u64 request_id, Web::WebAuthn::AuthenticatorRequest);
+    void cancel_webauthn(Badge<WebContentPage>, WebContentPage&, u64 request_id);
 
     MicrophoneAuthorization microphone_authorization() const;
     // Calls back with whether the system lets the browser use the microphone, once the system has asked the user if it
@@ -755,6 +759,8 @@ public:
     Function<void(WebContentPage& requesting_page, u64 request_id, Web::HTML::CrossProcessId document_id)> on_start_geolocation_position_watch;
     Function<void(WebContentPage& requesting_page, u64 request_id)> on_stop_geolocation_position_watch;
     Function<void(PermissionPromptRequest const&, PermissionPromptCallback)> on_request_permission;
+    // Asks the user to use a security key, and returns a function that dismisses the prompt.
+    Function<Function<void()>(Web::WebAuthn::AuthenticatorRequest, Function<void(Web::WebAuthn::Result)>)> on_request_webauthn;
     Function<void(PermissionPromptRequest const&)> on_cancel_permission_prompt;
     Function<void(TabIndicator, bool visible)> on_tab_indicator_change;
     Function<void(Web::HTML::FileFilter const& accepted_file_types, Web::HTML::AllowMultipleFiles)> on_request_file_picker;
@@ -872,6 +878,12 @@ protected:
     void report_permission_presence();
     void update_location_in_use();
     void ignore_pending_permission_prompts();
+    enum class DismissWebAuthnPrompt : u8 {
+        No,
+        Yes,
+    };
+    void settle_webauthn(Web::WebAuthn::Result, DismissWebAuthnPrompt = DismissWebAuthnPrompt::Yes);
+    void abort_webauthn_ceremony();
     void set_title(Utf16String);
     void set_favicon(Optional<Gfx::Bitmap const&>);
     bool shows_background_activity() const;
@@ -1292,6 +1304,15 @@ protected:
         bool shown { false };
     };
     Vector<PendingPermissionPrompt> m_pending_permission_prompts;
+
+    // The view runs one WebAuthn ceremony at a time, for its active document.
+    struct PendingWebAuthn {
+        WeakPtr<WebContentPage> page;
+        u64 request_id { 0 };
+        NonnullRefPtr<Core::Timer> deadline;
+        Function<void()> dismiss_prompt;
+    };
+    Optional<PendingWebAuthn> m_pending_webauthn;
 
     struct PermissionPromptOutcomeForTesting {
         Web::Permissions::PromptOutcome outcome;

@@ -56,6 +56,7 @@
 #include <LibWebCommon/ReferrerPolicy/ReferrerPolicy.h>
 #include <LibWebCommon/StorageAPI/StorageAreaId.h>
 #include <LibWebCommon/StorageAPI/StorageEndpoint.h>
+#include <LibWebCommon/WebAuthn/WebAuthn.h>
 #include <LibWebCommon/WebDriver/BiDi.h>
 #include <LibWebCommon/WebDriver/Capabilities.h>
 #include <LibWebCommon/WebDriver/Response.h>
@@ -278,6 +279,7 @@ endpoint WebContentServer routed by Web::PageId page_id
     set_geolocation_emulated_position(Web::PageId page_id, WebView::GeolocationPositionData position, Optional<u16> error_code) =|
     geolocation_position_response(Web::PageId page_id, u64 request_id, WebView::GeolocationPositionData position, Optional<u16> error_code) =|
     permission_request_completed(Web::PageId page_id, u64 request_id, Web::Permissions::EffectiveState state) =|
+    webauthn_request_completed(Web::PageId page_id, u64 request_id, Web::WebAuthn::Result result) =|
     notification_shown(Web::PageId page_id, u64 notification_id) =|
     notification_show_failed(Web::PageId page_id, u64 notification_id) =|
     notification_clicked(Web::PageId page_id, u64 notification_id) =|

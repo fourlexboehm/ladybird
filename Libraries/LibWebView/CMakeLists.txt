@@ -89,6 +89,7 @@ set(SOURCES
     Utilities.cpp
     VideoDecoderServerControlClient.cpp
     ViewImplementation.cpp
+    WebAuthn.cpp
     WebCompatReport.cpp
     WebContentClient.cpp
     WebContentPage.cpp
@@ -184,6 +185,14 @@ if (LADYBIRD_ENABLE_UPDATE_CHECK)
 endif()
 
 target_link_libraries(LibWebView PUBLIC LibCompositing LibPlatformFeatures LibSandbox LibWebCommon)
+if (LADYBIRD_ENABLE_WEBAUTHN AND (APPLE OR (LINUX AND NOT ANDROID)))
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(FIDO2 REQUIRED IMPORTED_TARGET GLOBAL libfido2)
+    pkg_check_modules(CBOR REQUIRED IMPORTED_TARGET GLOBAL libcbor)
+    target_sources(LibWebView PRIVATE LibFido2.cpp)
+    target_link_libraries(LibWebView PRIVATE PkgConfig::FIDO2 PkgConfig::CBOR OpenSSL::Crypto)
+    target_compile_definitions(LibWebView PRIVATE LADYBIRD_HAS_LIBFIDO2)
+endif()
 target_link_libraries(LibWebView PRIVATE LibCore LibCrypto LibDatabase LibDevTools LibFileSystem LibGfx LibHTTP LibImageDecoderClient LibIPC LibRequests LibMedia LibMediaClient LibUnicode LibURL LibTextCodec LibThreading)
 
 if (LINUX)

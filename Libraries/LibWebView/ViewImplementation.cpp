@@ -169,6 +169,7 @@ ViewImplementation::~ViewImplementation()
         update_state_of_discarded_tab();
     }
     cancel_all_native_geolocation_requests();
+    abort_webauthn_ceremony();
 
     if (!m_window_handle.is_empty() && !m_owner_view_id.has_value())
         Application::the().notify_webdriver_window_closed(m_window_handle);
@@ -391,11 +392,72 @@ void ViewImplementation::did_change_active_document(Badge<CanonicalTraversable>)
     m_page_translation->did_change_active_document();
     // A prompt the document that asked has left behind goes unanswered: the user ignored it.
     ignore_pending_permission_prompts();
+    // https://w3c.github.io/webauthn/#sctn-createCredential
+    // 22. While lifetimeTimer has not expired, perform the following actions depending upon lifetimeTimer, and
+    //     responses from the authenticators:
+    //     If the user exercises a user agent user-interface option to cancel the process,
+    //         ... throw a "NotAllowedError" DOMException.
+    // NB: The document that asked has left, which ends its ceremony as if the user canceled it.
+    abort_webauthn_ceremony();
     report_permission_presence();
     m_permissions_requested_by_page.clear();
     set_title(Utf16String::from_utf8(url().serialize()));
     set_favicon({});
     did_update_url();
+}
+
+void ViewImplementation::request_webauthn(Badge<WebContentPage>, WebContentPage& page, u64 request_id, Web::WebAuthn::AuthenticatorRequest request)
+{
+    if (!on_request_webauthn) {
+        page.async_webauthn_request_completed(request_id, Web::WebAuthn::Error::NotSupported);
+        return;
+    }
+    if (m_pending_webauthn.has_value()) {
+        page.async_webauthn_request_completed(request_id, Web::WebAuthn::Error::NotAllowed);
+        return;
+    }
+
+    // https://w3c.github.io/webauthn/#sctn-createCredential
+    // 23. Throw a "NotAllowedError" DOMException.
+    // NB: This is what happens once lifetimeTimer expires.
+    auto deadline = Core::Timer::create_single_shot(AK::Duration::from_milliseconds(request.timeout), [this] {
+        settle_webauthn(Web::WebAuthn::Error::NotAllowed);
+    });
+    deadline->start();
+    m_pending_webauthn = PendingWebAuthn { page.make_weak_ptr(), request_id, move(deadline), {} };
+
+    auto dismiss_prompt = on_request_webauthn(move(request), [view_id = view_id(), page = page.make_weak_ptr(), request_id](Web::WebAuthn::Result result) {
+        auto view = find_view_by_id(view_id);
+        if (!view.has_value() || !view->m_pending_webauthn.has_value())
+            return;
+        if (view->m_pending_webauthn->page.ptr() != page.ptr() || view->m_pending_webauthn->request_id != request_id)
+            return;
+        view->settle_webauthn(move(result), DismissWebAuthnPrompt::No);
+    });
+    if (m_pending_webauthn.has_value())
+        m_pending_webauthn->dismiss_prompt = move(dismiss_prompt);
+}
+
+void ViewImplementation::cancel_webauthn(Badge<WebContentPage>, WebContentPage& page, u64 request_id)
+{
+    if (m_pending_webauthn.has_value() && m_pending_webauthn->page.ptr() == &page && m_pending_webauthn->request_id == request_id)
+        settle_webauthn(Web::WebAuthn::Error::NotAllowed);
+}
+
+void ViewImplementation::abort_webauthn_ceremony()
+{
+    if (m_pending_webauthn.has_value())
+        settle_webauthn(Web::WebAuthn::Error::NotAllowed);
+}
+
+void ViewImplementation::settle_webauthn(Web::WebAuthn::Result result, DismissWebAuthnPrompt dismiss_prompt)
+{
+    auto pending = m_pending_webauthn.release_value();
+    pending.deadline->stop();
+    if (dismiss_prompt == DismissWebAuthnPrompt::Yes && pending.dismiss_prompt)
+        pending.dismiss_prompt();
+    if (auto page = pending.page.strong_ref(); page && page->is_open())
+        page->async_webauthn_request_completed(pending.request_id, move(result));
 }
 
 void ViewImplementation::update_displayed_url()

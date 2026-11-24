@@ -1496,6 +1496,21 @@ void PageClient::permission_request_completed(u64 request_id, Web::Permissions::
     page().permission_request_completed(request_id, state);
 }
 
+void PageClient::webauthn_request_completed(u64 request_id, Web::WebAuthn::Result result)
+{
+    page().webauthn_request_completed(request_id, move(result));
+}
+
+void PageClient::page_did_request_webauthn(u64 request_id, Web::HTML::CrossProcessId requesting_document_id, Web::WebAuthn::Request const& request)
+{
+    client().async_did_request_webauthn(m_id, request_id, requesting_document_id, request);
+}
+
+void PageClient::page_did_cancel_webauthn(u64 request_id)
+{
+    client().async_did_cancel_webauthn(m_id, request_id);
+}
+
 void PageClient::page_did_cancel_geolocation_position_request(u64 request_id)
 {
     client().async_did_cancel_geolocation_position_request(m_id, request_id);

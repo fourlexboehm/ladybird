@@ -104,6 +104,7 @@ set(TEST_SOURCES
     TestTabPerformanceStats.cpp
     TestWebDriverBiDiNetwork.cpp
     TestWebViewURL.cpp
+    TestWebAuthn.cpp
     TestWebWorkerClient.cpp
 )
 
@@ -195,6 +196,11 @@ target_link_libraries(TestLibWebView PRIVATE LibAudio LibCompositing LibDatabase
 
 if (APPLE)
     add_dependencies(TestLibWebView ProcessReaper)
+endif()
+
+if (TARGET PkgConfig::FIDO2)
+    target_sources(TestLibWebView PRIVATE TestLibFido2.cpp)
+    target_link_libraries(TestLibWebView PRIVATE PkgConfig::FIDO2 PkgConfig::CBOR)
 endif()
 
 if (LINUX)

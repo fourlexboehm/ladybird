@@ -3564,6 +3564,12 @@ void ConnectionFromClient::permission_request_completed(Web::PageId page_id, u64
         page->permission_request_completed(request_id, state);
 }
 
+void ConnectionFromClient::webauthn_request_completed(Web::PageId page_id, u64 request_id, Web::WebAuthn::Result result)
+{
+    if (auto page = this->page(page_id); page.has_value())
+        page->webauthn_request_completed(request_id, move(result));
+}
+
 void ConnectionFromClient::notification_shown(Web::PageId page_id, u64 notification_id)
 {
     if (auto page = this->page(page_id); page.has_value())

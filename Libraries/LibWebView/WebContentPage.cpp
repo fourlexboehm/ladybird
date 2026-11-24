@@ -40,6 +40,7 @@
 #include <LibWebView/URL.h>
 #include <LibWebView/Utilities.h>
 #include <LibWebView/ViewImplementation.h>
+#include <LibWebView/WebAuthn.h>
 #include <LibWebView/WebContentClient.h>
 #include <LibWebView/WebContentPage.h>
 #include <LibWebView/WebContentTestClient.h>
@@ -1867,6 +1868,34 @@ RefPtr<CanonicalDocument> WebContentPage::hosted_document_with_id(Web::HTML::Cro
         return IterationDecision::Break;
     });
     return found;
+}
+
+void WebContentPage::did_request_webauthn(u64 request_id, Web::HTML::CrossProcessId document_id, Web::WebAuthn::Request request)
+{
+    auto deny = [&](Web::WebAuthn::Error error) { async_webauthn_request_completed(request_id, error); };
+
+    // The UI process decides from what it knows of the requesting document, never from what the renderer says of it.
+    // NB: Ceremonies of nested documents need Permissions Policy checks that are not implemented, so only the active
+    //     top-level document may run one, while its tab has focus.
+    auto document = hosted_document_with_id(document_id);
+    if (!document || !document->is_top_level() || !has_traversable() || traversable().active_document().id() != document_id
+        || !traversable().has_system_focus()) {
+        deny(Web::WebAuthn::Error::NotAllowed);
+        return;
+    }
+
+    auto prepared = WebAuthn::prepare_request(request, document->origin());
+    if (auto const* error = prepared.get_pointer<Web::WebAuthn::Error>()) {
+        deny(*error);
+        return;
+    }
+    view().request_webauthn({}, *this, request_id, move(prepared.get<Web::WebAuthn::AuthenticatorRequest>()));
+}
+
+void WebContentPage::did_cancel_webauthn(u64 request_id)
+{
+    if (has_traversable())
+        view().cancel_webauthn({}, *this, request_id);
 }
 
 void WebContentPage::did_request_permission(u64 request_id, Web::HTML::CrossProcessId document_id, Utf16String name)
