@@ -613,13 +613,24 @@ def union_holds_sequence_of_cells(idl_type: IDLType, context: GenerationContext)
     )
 
 
-def dictionary_holds_sequence_of_cells(dictionary: Dictionary, context: GenerationContext) -> bool:
+def dictionary_holds_sequence_of_cells(
+    dictionary: Dictionary, context: GenerationContext, enclosing_dictionary_names: FrozenSet[str] = frozenset()
+) -> bool:
     """Whether a member of the dictionary is a sequence of values that are or can hold cells, or a union with such a
-    member, which the struct of the dictionary keeps alive in a MarkedVec, for as long as the reference to the VM that
-    it was converted with lives."""
+    member, including through a nested dictionary, which the struct of the dictionary keeps alive in a MarkedVec, for
+    as long as the reference to the VM that it was converted with lives."""
+    if dictionary.name in enclosing_dictionary_names:
+        return False
+    enclosing_dictionary_names |= {dictionary.name}
     return any(
-        is_sequence_of_cells(member.type, context) or union_holds_sequence_of_cells(member.type, context)
-        for member in dictionary.members
+        is_sequence_of_cells(member.type, context)
+        or union_holds_sequence_of_cells(member.type, context)
+        or (
+            (nested_dictionary := resolved_dictionary(member.type, context)) is not None
+            and dictionary_holds_sequence_of_cells(nested_dictionary, context, enclosing_dictionary_names)
+        )
+        for inherited_dictionary in context.dictionary_inheritance_stack(dictionary)
+        for member in inherited_dictionary.members
     )
 
 

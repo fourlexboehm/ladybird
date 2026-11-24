@@ -447,6 +447,7 @@ def write_dictionary_from_js(out: TextIO, context: GenerationContext, dictionary
     one that does not match the members of the dictionary does not compile."""
     path = rust_dictionary_path(dictionary, context)
     holds_sequence_of_cells = dictionary_holds_sequence_of_cells(dictionary, context)
+    object_local = "object" if dictionary.members else "_object"
     ancestors = context.dictionary_inheritance_stack(dictionary)[1:]
     if any(dictionary_holds_sequence_of_cells(ancestor, context) for ancestor in ancestors):
         # NB: The struct of such a dictionary has the lifetime of the reference to the VM, which the struct of a
@@ -499,7 +500,7 @@ def write_dictionary_from_js(out: TextIO, context: GenerationContext, dictionary
             present = f"Some({conversion}?)"
             empty_fields.append(f"{rust_identifier(member.name)}: None")
         conversions.append(
-            f"""            let {local} = match dictionary_member(vm, object, &{key})? {{
+            f"""            let {local} = match dictionary_member(vm, {object_local}, &{key})? {{
                 Some(member) => {present},
                 None => {missing},
             }};
@@ -526,7 +527,7 @@ def write_dictionary_from_js(out: TextIO, context: GenerationContext, dictionary
     /// whose struct keeps the sequences of its members alive for as long as the reference to the VM lives.
     impl<'vm> {path}<'vm> {{
         pub(crate) fn from_js(vm: &'vm Vm, value: Value) -> ThrowCompletionOr<Self> {{
-{"".join(keys)}            let object = dictionary_object(vm, value, "{dictionary.name}")?;
+{"".join(keys)}            let {object_local} = dictionary_object(vm, value, "{dictionary.name}")?;
 {parent_conversion}{"".join(conversions)}            Ok(Self {{ {fields} }})
         }}
 {empty}    }}
@@ -538,7 +539,7 @@ def write_dictionary_from_js(out: TextIO, context: GenerationContext, dictionary
     /// The conversion of a JS value to the dictionary {dictionary.name}, https://webidl.spec.whatwg.org/#js-dictionary
     impl FromJs for {path} {{
         fn from_js(vm: &Vm, value: Value) -> ThrowCompletionOr<Self> {{
-{"".join(keys)}            let object = dictionary_object(vm, value, "{dictionary.name}")?;
+{"".join(keys)}            let {object_local} = dictionary_object(vm, value, "{dictionary.name}")?;
 {parent_conversion}{"".join(conversions)}            Ok(Self {{ {fields} }})
         }}
     }}
