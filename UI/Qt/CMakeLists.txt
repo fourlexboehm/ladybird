@@ -73,6 +73,7 @@ add_library(ladybird_impl STATIC
     Theme.cpp
     VersionPage.cpp
     WebCompatReportReview.cpp
+    WebAuthnDialog.cpp
     WebContentView.cpp
     WebUIPage.cpp
     WindowCloseCoordinator.cpp

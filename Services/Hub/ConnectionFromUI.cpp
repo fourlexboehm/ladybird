@@ -162,6 +162,12 @@ void ConnectionFromUI::view_answer_permission_request(u64 view_id, u64 answer_id
     }
 }
 
+void ConnectionFromUI::view_answer_webauthn(u64 view_id, u64 answer_id, Web::WebAuthn::Result result)
+{
+    if (auto* view = find_view(view_id))
+        view->did_get_webauthn_answer(answer_id, move(result));
+}
+
 void ConnectionFromUI::active_view_changed(Optional<u64> view_id)
 {
     Application::the().set_active_view(view_id);

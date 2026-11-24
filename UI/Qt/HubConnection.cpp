@@ -262,6 +262,34 @@ void HubConnection::view_request_date_picker(u64 view_id, Utf16String input_type
         view->on_request_date_picker(input_type, value, minimum, maximum);
 }
 
+void HubConnection::view_request_webauthn(u64 view_id, u64 answer_id, Web::WebAuthn::AuthenticatorRequest request)
+{
+    auto* view = RemoteView::find(view_id);
+    if (!view || !view->on_request_webauthn) {
+        async_view_answer_webauthn(view_id, answer_id, Web::WebAuthn::Error::NotSupported);
+        return;
+    }
+    // NB: The entry is there before the prompt is, so that a prompt that answers right away removes it.
+    view->webauthn_dismissals.set(answer_id, {});
+    auto dismiss = view->on_request_webauthn(move(request), [view_id, answer_id](Web::WebAuthn::Result result) {
+        if (auto* view = RemoteView::find(view_id))
+            view->webauthn_dismissals.remove(answer_id);
+        if (auto* hub = HubConnection::the_if_connected())
+            hub->async_view_answer_webauthn(view_id, answer_id, move(result));
+    });
+    if (auto entry = view->webauthn_dismissals.find(answer_id); entry != view->webauthn_dismissals.end())
+        entry->value = move(dismiss);
+}
+
+void HubConnection::view_cancel_webauthn(u64 view_id, u64 answer_id)
+{
+    auto* view = RemoteView::find(view_id);
+    if (!view)
+        return;
+    if (auto dismiss = view->webauthn_dismissals.take(answer_id); dismiss.has_value() && *dismiss)
+        (*dismiss)();
+}
+
 void HubConnection::view_request_dictionary_lookup(u64 view_id, WebView::DictionaryLookup lookup, Gfx::IntPoint position)
 {
     if (auto* view = RemoteView::find(view_id); view && view->on_request_dictionary_lookup)

@@ -408,6 +408,9 @@ public:
     decltype(Hub::View::on_request_color_picker) on_request_color_picker;
     decltype(Hub::View::on_request_date_picker) on_request_date_picker;
     decltype(Hub::View::on_request_permission) on_request_permission;
+    decltype(Hub::View::on_request_webauthn) on_request_webauthn;
+    // Dismisses the WebAuthn prompts the view shows, by the answer they await.
+    HashMap<u64, Function<void()>> webauthn_dismissals;
     decltype(Hub::View::on_cancel_permission_prompt) on_cancel_permission_prompt;
     decltype(Hub::View::on_tab_indicator_change) on_tab_indicator_change;
     Function<void(Hub::ViewState const& previous_state)> on_state_change;

@@ -23,6 +23,7 @@
 #include <LibWebCommon/Page/SpellingError.h>
 #include <LibWebCommon/Page/WritingSuggestion.h>
 #include <LibWebCommon/Clipboard/SystemClipboard.h>
+#include <LibWebCommon/WebAuthn/WebAuthn.h>
 #include <LibWebView/DefaultBrowser.h>
 #include <LibWebView/HistoryVisitTransition.h>
 #include <LibWebView/MicrophoneAuthorizer.h>
@@ -244,6 +245,7 @@ endpoint HubServer
     update_settings(u64 change_id, ByteString changes_json) =|
     view_answer(u64 view_id, u64 answer_id, bool answer) =|
     view_answer_permission_request(u64 view_id, u64 answer_id, Web::Permissions::PromptOutcome outcome) =|
+    view_answer_webauthn(u64 view_id, u64 answer_id, Web::WebAuthn::Result result) =|
     destroy_view(u64 view_id) =|
     view_set_viewport(u64 view_id, Web::DevicePixelSize size, double device_pixel_ratio) =|
     view_set_system_theme(u64 view_id, Core::AnonymousBuffer theme) =|

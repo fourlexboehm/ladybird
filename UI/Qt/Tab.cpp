@@ -40,6 +40,7 @@
 #include <UI/Qt/SuggestionProvider.h>
 #include <UI/Qt/SystemAppearance.h>
 #include <UI/Qt/Theme.h>
+#include <UI/Qt/WebAuthnDialog.h>
 
 #include <QAction>
 #include <QApplication>
@@ -594,6 +595,10 @@ void Tab::initialize(Optional<u64> hub_view_id)
 
     view().on_cancel_permission_prompt = [this](WebView::PermissionPromptRequest const& request) {
         m_permission_prompts.cancel(request);
+    };
+
+    view().on_request_webauthn = [this](Web::WebAuthn::AuthenticatorRequest request, Function<void(Web::WebAuthn::Result)> complete) {
+        return request_webauthn(&view(), AK::move(request), AK::move(complete));
     };
 
     view().on_state_change = [this](Hub::ViewState const& previous_state) {

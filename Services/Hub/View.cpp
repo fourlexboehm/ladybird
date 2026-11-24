@@ -116,6 +116,13 @@ View::View(InitialState initial_state)
     set_page_background_color_to_system_canvas(m_websites_prefer_dark);
 }
 
+View::~View()
+{
+    // NB: Dismissing the prompt of an ongoing ceremony uses the pending answers, which are gone by the time
+    //     ViewImplementation's destructor would end it.
+    abort_webauthn_ceremony();
+}
+
 void View::initialize(Optional<WebView::CanonicalTraversable&> traversable)
 {
     initialize_tab(Web::HTML::VisibilityState::Hidden, traversable);
@@ -173,6 +180,12 @@ void View::did_get_permission_answer(u64 answer_id, Web::Permissions::PromptOutc
 {
     if (auto on_answer = m_pending_permission_answers.take(answer_id); on_answer.has_value())
         (*on_answer)(outcome);
+}
+
+void View::did_get_webauthn_answer(u64 answer_id, Web::WebAuthn::Result result)
+{
+    if (auto on_answer = m_pending_webauthn_answers.take(answer_id); on_answer.has_value())
+        (*on_answer)(move(result));
 }
 
 // NB: The UI may keep the tab, such as when the user sees it after all. It then stays as it is.
@@ -247,6 +260,25 @@ void View::forward_callbacks_to_ui(bool is_tab)
             m_pending_permission_answers.set(answer_id, move(on_outcome));
             push_state_to_ui();
             ui->async_view_request_permission(view_id(), answer_id, request);
+        };
+
+        on_request_webauthn = [this](Web::WebAuthn::AuthenticatorRequest request, Function<void(Web::WebAuthn::Result)> on_complete) -> Function<void()> {
+            auto* ui = ConnectionFromUI::the();
+            if (!ui) {
+                on_complete(Web::WebAuthn::Error::NotSupported);
+                return {};
+            }
+            auto answer_id = m_next_answer_id++;
+            m_pending_webauthn_answers.set(answer_id, move(on_complete));
+            push_state_to_ui();
+            ui->async_view_request_webauthn(view_id(), answer_id, move(request));
+            return [weak_this = make_weak_ptr<View>(), answer_id] {
+                if (auto* view = weak_this.ptr()) {
+                    view->m_pending_webauthn_answers.remove(answer_id);
+                    if (auto* ui = ConnectionFromUI::the())
+                        ui->async_view_cancel_webauthn(view->view_id(), answer_id);
+                }
+            };
         };
 
         on_request_date_picker = [this](auto const&... arguments) {
